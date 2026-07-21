@@ -47,7 +47,7 @@ making food miserable. Hard context you must always respect:
 
 async function generateJSON({ prompt, schema }) {
   const model = client().getGenerativeModel({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-flash-latest',
     generationConfig: {
       responseMimeType: 'application/json',
       responseSchema: schema,
