@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Better Bites</title>
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">🥗 Better Bites</div>
+    <nav class="tabs" id="mainTabs">
+      <button class="tab-btn active" data-tab="home">Home</button>
+      <button class="tab-btn" data-tab="calendar">Calendar</button>
+      <button class="tab-btn" data-tab="snacks">Snacks</button>
+      <button class="tab-btn" data-tab="pantry">Pantry</button>
+    </nav>
+  </header>
+
+  <main id="app">
+
+    <!-- HOME TAB -->
+    <section class="tab-panel active" id="tab-home">
+      <div class="suggestion-banner" id="suggestionBanner">
+        <div class="suggestion-header">
+          <span>Tonight's suggestion</span>
+          <button id="refreshSuggestion" class="link-btn">refresh</button>
+        </div>
+        <div id="suggestionContent" class="suggestion-body">
+          <button id="loadSuggestion" class="btn primary small">What should we eat tonight?</button>
+        </div>
+      </div>
+
+      <div class="subtabs" id="homeSubtabs">
+        <button class="subtab-btn active" data-subtab="search">Search</button>
+        <button class="subtab-btn" data-subtab="discover">Discover</button>
+      </div>
+
+      <!-- Search sub-tab -->
+      <div class="subtab-panel active" id="subtab-search">
+        <form id="searchForm" class="search-row">
+          <input id="searchInput" type="text" placeholder="What do you have or want to eat? (e.g. chicken thighs, tacos, low carb)" />
+          <button type="submit" class="btn primary">Search</button>
+        </form>
+        <div id="searchResults" class="card-grid"></div>
+      </div>
+
+      <!-- Discover / swipe sub-tab -->
+      <div class="subtab-panel" id="subtab-discover">
+        <div class="swipe-stage" id="swipeStage">
+          <div class="swipe-empty" id="swipeEmpty">
+            <p>Load some recipes to start swiping.</p>
+            <button id="loadFeed" class="btn primary">Load recipes</button>
+          </div>
+        </div>
+        <div class="swipe-controls" id="swipeControls" style="display:none;">
+          <button id="swipeNo" class="round-btn no">✕</button>
+          <button id="swipePlus" class="round-btn plus">＋</button>
+          <button id="swipeYes" class="round-btn yes">♥</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- CALENDAR TAB -->
+    <section class="tab-panel" id="tab-calendar">
+      <div class="calendar-header">
+        <button id="prevWeek" class="btn small">◀ Prev</button>
+        <div id="weekLabel" class="week-label"></div>
+        <button id="nextWeek" class="btn small">Next ▶</button>
+      </div>
+      <div class="week-grid" id="weekGrid"></div>
+    </section>
+
+    <!-- SNACKS TAB -->
+    <section class="tab-panel" id="tab-snacks">
+      <form id="snackForm" class="search-row">
+        <input id="snackInput" type="text" placeholder="Craving something specific? (optional, e.g. chocolate, something crunchy)" />
+        <button type="submit" class="btn primary">Get snack ideas</button>
+      </form>
+      <div id="snackResults" class="card-grid"></div>
+    </section>
+
+    <!-- PANTRY TAB -->
+    <section class="tab-panel" id="tab-pantry">
+      <form id="pantryForm" class="pantry-form">
+        <input id="pantryItem" type="text" placeholder="Item (e.g. chicken thighs)" required />
+        <input id="pantryQty" type="text" placeholder="Qty" />
+        <input id="pantryUnit" type="text" placeholder="Unit (lb, oz, ea)" />
+        <input id="pantryCategory" type="text" placeholder="Category" />
+        <input id="pantryLocation" type="text" placeholder="Location (fridge/freezer/pantry)" />
+        <button type="submit" class="btn primary">Add</button>
+      </form>
+      <div id="pantryList" class="pantry-list"></div>
+    </section>
+
+  </main>
+
+  <!-- Add-to-plan / save modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <h3 id="modalTitle">Save recipe</h3>
+      <p class="modal-sub">Add to a day this week, or just save it to your recipe book.</p>
+      <div class="modal-days" id="modalDays"></div>
+      <button id="modalSaveOnly" class="btn secondary full">Save to recipe book only</button>
+      <button id="modalClose" class="btn ghost full">Cancel</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/render.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

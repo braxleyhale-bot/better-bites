@@ -1,0 +1,22 @@
+{
+  "name": "better-bites",
+  "version": "1.0.0",
+  "description": "A healthy-eating meal planner for two, built around a Ninja Combi, a blender, a vanilla protein powder, and a $500/month food budget.",
+  "main": "server/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "google-auth-library": "^9.14.2",
+    "node-fetch": "^2.7.0"
+  }
+}
