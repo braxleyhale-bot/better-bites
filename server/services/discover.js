@@ -1,8 +1,14 @@
 // Builds the "swipe" discovery feed by blending real recipes from
 // TheMealDB with recipes Gemini invents specifically to fit this
 // household's pantry/equipment/budget/preferences, then normalizes
-// everything to one shared shape and adds AI nutrition tags to the
-// MealDB recipes (which don't come with any).
+// everything to one shared shape.
+//
+// Speed note: earlier versions ran an extra Gemini call to estimate
+// nutrition for every single MealDB recipe before returning the feed,
+// which meant waiting on ~10 AI calls per page load. Real recipes now come
+// back immediately without nutrition numbers; call tagRecipe() below
+// on-demand (e.g. when a card is expanded) if you want AI-estimated
+// macros for a specific one.
 
 const mealdb = require('./mealdb');
 const gemini = require('./gemini');
@@ -31,7 +37,7 @@ function toCard(recipe) {
   };
 }
 
-async function buildSwipeFeed({ likedTags = [], dislikedTags = [], pantryItems = [], count = 10 }) {
+async function buildSwipeFeed({ likedTags = [], dislikedTags = [], pantryItems = [], count = 8 }) {
   const half = Math.ceil(count / 2);
 
   const [randomMeals, aiRecipes] = await Promise.all([
@@ -41,24 +47,7 @@ async function buildSwipeFeed({ likedTags = [], dislikedTags = [], pantryItems =
       .catch(() => []),
   ]);
 
-  // Tag the real recipes with AI-estimated nutrition (best effort; if this
-  // fails for one, it's still shown, just without nutrition numbers).
-  const taggedMeals = await Promise.all(
-    randomMeals.map(async (m) => {
-      try {
-        const tags = await gemini.tagExternalRecipe({
-          name: m.name,
-          ingredients: m.ingredients,
-          instructions: m.instructions.join(' '),
-        });
-        return { ...m, ...tags, tags: [...m.tags] };
-      } catch (e) {
-        return m;
-      }
-    })
-  );
-
-  const cards = [...taggedMeals.map(toCard), ...aiRecipes.map(toCard)];
+  const cards = [...randomMeals.map(toCard), ...aiRecipes.map(toCard)];
   // Simple shuffle so real/AI recipes are interleaved rather than in two
   // visible blocks.
   for (let i = cards.length - 1; i > 0; i -= 1) {
@@ -82,21 +71,14 @@ async function searchRecipes({ query, pantryItems = [], likedTags = [], disliked
     seen.add(m.externalId);
     return true;
   });
-  const taggedMeals = await Promise.all(
-    externalMeals.slice(0, 8).map(async (m) => {
-      try {
-        const tags = await gemini.tagExternalRecipe({
-          name: m.name,
-          ingredients: m.ingredients,
-          instructions: m.instructions.join(' '),
-        });
-        return { ...m, ...tags };
-      } catch (e) {
-        return m;
-      }
-    })
-  );
-  return [...aiRecipes.map(toCard), ...taggedMeals.map(toCard)];
+  return [...aiRecipes.map(toCard), ...externalMeals.slice(0, 8).map(toCard)];
 }
 
-module.exports = { buildSwipeFeed, searchRecipes, toCard };
+// On-demand nutrition estimate for a single recipe (used when the
+// frontend wants macros for a real recipe that came back untagged).
+async function tagRecipe({ name, ingredients, instructions }) {
+  const tags = await gemini.tagExternalRecipe({ name, ingredients, instructions });
+  return tags;
+}
+
+module.exports = { buildSwipeFeed, searchRecipes, toCard, tagRecipe };

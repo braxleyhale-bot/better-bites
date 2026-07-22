@@ -43,10 +43,10 @@
       </div>
       <div class="swipe-controls" id="swipeControls" style="display:none;">
         <button id="swipeNo" class="round-btn no" title="Not interested">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
         </button>
         <button id="swipePlus" class="round-btn plus" title="Add to plan / recipe book">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         </button>
         <button id="swipeYes" class="round-btn yes" title="Like">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9.1C.4 8.6 2 5 5.6 5c2 0 3.4 1 4.4 2.4C11 6 12.4 5 14.4 5 18 5 19.6 8.6 22 11.9 19.5 16.4 12 21 12 21z"/></svg>
@@ -75,18 +75,30 @@
       <div id="snackResults" class="card-grid"></div>
     </section>
 
-    <!-- PANTRY TAB -->
-    <section class="tab-panel" id="tab-pantry">
-      <div class="page-title">Pantry</div>
-      <form id="pantryForm" class="pantry-form">
-        <input id="pantryItem" type="text" placeholder="Item (e.g. chicken thighs)" required />
-        <input id="pantryQty" type="text" placeholder="Qty" />
-        <input id="pantryUnit" type="text" placeholder="Unit" />
-        <input id="pantryCategory" type="text" placeholder="Category" />
-        <input id="pantryLocation" type="text" placeholder="Location" />
-        <button type="submit" class="btn primary">Add</button>
-      </form>
-      <div id="pantryList" class="pantry-list"></div>
+    <!-- COOKBOOK TAB (saved recipes + pantry) -->
+    <section class="tab-panel" id="tab-cookbook">
+      <div class="page-title">Cookbook</div>
+
+      <div class="segmented" id="cookbookToggle">
+        <button class="segmented-btn active" data-view="recipes">My Recipes</button>
+        <button class="segmented-btn" data-view="pantry">Pantry</button>
+      </div>
+
+      <div class="cookbook-view active" id="cookbookRecipesView">
+        <div id="cookbookRecipes" class="card-grid"></div>
+      </div>
+
+      <div class="cookbook-view" id="cookbookPantryView">
+        <form id="pantryForm" class="pantry-form">
+          <input id="pantryItem" type="text" placeholder="Item (e.g. chicken thighs)" required />
+          <input id="pantryQty" type="text" placeholder="Qty" />
+          <input id="pantryUnit" type="text" placeholder="Unit" />
+          <input id="pantryCategory" type="text" placeholder="Category" />
+          <input id="pantryLocation" type="text" placeholder="Location" />
+          <button type="submit" class="btn primary">Add</button>
+        </form>
+        <div id="pantryList" class="pantry-list"></div>
+      </div>
     </section>
 
   </main>
@@ -95,7 +107,7 @@
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal">
       <h3 id="modalTitle">Save recipe</h3>
-      <p class="modal-sub">Add to a day this week, or just save it to your recipe book.</p>
+      <p class="modal-sub" id="modalSub">Add to a day this week, or just save it to your recipe book.</p>
       <div class="modal-days" id="modalDays"></div>
       <button id="modalSaveOnly" class="btn secondary full">Save to recipe book only</button>
       <button id="modalClose" class="btn ghost full">Cancel</button>
@@ -122,9 +134,9 @@
       <span class="nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="14" cy="9" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="14" r="1" fill="currentColor" stroke="none"/></svg></span>
       Snacks
     </button>
-    <button class="nav-btn" data-tab="pantry">
-      <span class="nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16l-1.5 10a2 2 0 0 1-2 1.7H7.5a2 2 0 0 1-2-1.7L4 9z"/><path d="M8 9V7a4 4 0 0 1 8 0v2"/></svg></span>
-      Pantry
+    <button class="nav-btn" data-tab="cookbook">
+      <span class="nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+      Cookbook
     </button>
   </nav>
 

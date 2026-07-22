@@ -13,7 +13,7 @@ router.get('/feed', async (req, res) => {
       prefs.getLikedDislikedTags(),
       prefs.getPantryItemNames(),
     ]);
-    const count = Number(req.query.count) || 10;
+    const count = Number(req.query.count) || 8;
     const cards = await discover.buildSwipeFeed({ likedTags, dislikedTags, pantryItems, count });
     res.json({ cards });
   } catch (e) {
@@ -52,6 +52,24 @@ router.post('/swipe', async (req, res) => {
     };
     await sheets.appendRow(TABS.SWIPES, record);
     res.status(201).json(record);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/discover/tag -> on-demand nutrition estimate for one recipe
+// (used when a real MealDB recipe is expanded and has no macros yet)
+// body: { name, ingredients: [], instructions: [] }
+router.post('/tag', async (req, res) => {
+  try {
+    const body = req.body || {};
+    if (!body.name) return res.status(400).json({ error: 'name is required' });
+    const tags = await discover.tagRecipe({
+      name: body.name,
+      ingredients: body.ingredients || [],
+      instructions: Array.isArray(body.instructions) ? body.instructions.join(' ') : (body.instructions || ''),
+    });
+    res.json(tags);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

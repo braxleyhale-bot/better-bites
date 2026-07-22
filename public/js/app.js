@@ -8,7 +8,7 @@ document.querySelectorAll('.nav-btn').forEach((btn) => {
     btn.classList.add('active');
     document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
     if (btn.dataset.tab === 'calendar') loadCalendar();
-    if (btn.dataset.tab === 'pantry') loadPantry();
+    if (btn.dataset.tab === 'cookbook') loadCookbookRecipes();
   });
 });
 
@@ -17,6 +17,7 @@ const modalOverlay = document.getElementById('modalOverlay');
 const modalDays = document.getElementById('modalDays');
 let modalCard = null;
 let modalSelectedDate = null;
+let modalSkipSave = false;
 
 function weekDates(startDate) {
   const days = [];
@@ -28,9 +29,10 @@ function weekDates(startDate) {
   return days;
 }
 
-function openModal(card) {
+function openModal(card, { skipSave = false } = {}) {
   modalCard = card;
   modalSelectedDate = null;
+  modalSkipSave = skipSave;
   modalDays.innerHTML = '';
   const today = new Date();
   weekDates(today).forEach((d) => {
@@ -44,6 +46,10 @@ function openModal(card) {
     });
     modalDays.appendChild(btn);
   });
+  document.getElementById('modalSaveOnly').style.display = skipSave ? 'none' : 'block';
+  document.getElementById('modalSub').textContent = skipSave
+    ? 'Add this saved recipe to a day this week.'
+    : "Add to a day this week, or just save it to your recipe book.";
   modalOverlay.classList.add('open');
 }
 
@@ -78,7 +84,7 @@ function ensureAddToDayButton() {
         return;
       }
       try {
-        await saveToRecipeBook(modalCard);
+        if (!modalSkipSave) await saveToRecipeBook(modalCard);
         await api.post('/api/mealplan', {
           Date: modalSelectedDate,
           MealSlot: 'Dinner',
@@ -149,7 +155,7 @@ document.getElementById('loadFeed').addEventListener('click', loadFeed);
 async function loadFeed() {
   swipeStage.innerHTML = '<div class="swipe-empty">Loading recipes...</div>';
   try {
-    const data = await api.get('/api/discover/feed?count=10');
+    const data = await api.get('/api/discover/feed?count=8');
     swipeDeck = data.cards;
     renderSwipeDeck();
   } catch (e) {
@@ -288,6 +294,78 @@ document.getElementById('snackForm').addEventListener('submit', async (e) => {
     results.innerHTML = `Couldn't get snack ideas: ${e.message}`;
   }
 });
+
+// ---------- Cookbook (saved recipes + pantry, in one tab) ----------
+document.querySelectorAll('.segmented-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.segmented-btn').forEach((b) => b.classList.remove('active'));
+    document.querySelectorAll('.cookbook-view').forEach((v) => v.classList.remove('active'));
+    btn.classList.add('active');
+    if (btn.dataset.view === 'recipes') {
+      document.getElementById('cookbookRecipesView').classList.add('active');
+    } else {
+      document.getElementById('cookbookPantryView').classList.add('active');
+      loadPantry();
+    }
+  });
+});
+
+// Saved RecipeBook rows come back from the Sheet as flat strings (pipe/
+// comma separated), so adapt them to the same card shape everything else
+// on the page renders.
+function recipeRecordToCard(r) {
+  return {
+    _rowIndex: r._rowIndex,
+    id: r.ID,
+    name: r.Name,
+    summary: '',
+    ingredients: String(r.Ingredients || '').split('|').map((s) => s.trim()).filter(Boolean),
+    instructions: String(r.Instructions || '').split('|').map((s) => s.trim()).filter(Boolean),
+    tags: String(r.Tags || '').split(',').map((s) => s.trim()).filter(Boolean),
+    source: r.Source || 'Saved',
+    sourceUrl: null,
+    image: null,
+    usesNinjaCombi: String(r.UsesNinjaCombi).toLowerCase() === 'yes',
+    usesBlender: String(r.UsesBlender).toLowerCase() === 'yes',
+    usesProteinPowder: false,
+    estCostUsd: r.EstCostUSD ? Number(r.EstCostUSD) : null,
+    estCaloriesPerServing: r.Calories ? Number(r.Calories) : null,
+    estProteinG: r.ProteinG ? Number(r.ProteinG) : null,
+    estSodiumMg: r.SodiumMg ? Number(r.SodiumMg) : null,
+    estCarbsG: r.CarbsG ? Number(r.CarbsG) : null,
+  };
+}
+
+async function loadCookbookRecipes() {
+  const grid = document.getElementById('cookbookRecipes');
+  grid.innerHTML = 'Loading your recipe book...';
+  try {
+    const data = await api.get('/api/recipes');
+    const records = data.recipes.filter((r) => r.Name);
+    grid.innerHTML = '';
+    if (!records.length) {
+      grid.innerHTML = '<p style="color:var(--muted)">No saved recipes yet — tap + on any recipe in Search, Discover, or Snacks to add it here.</p>';
+      return;
+    }
+    records.forEach((r) => {
+      const card = recipeRecordToCard(r);
+      grid.appendChild(buildRecipeCard(card, {
+        onPlus: (c) => openModal(c, { skipSave: true }),
+        onRemove: async (c) => {
+          try {
+            await api.del(`/api/recipes/${c._rowIndex}`);
+            showToast(`Removed "${c.name}"`);
+            loadCookbookRecipes();
+          } catch (e) {
+            showToast(`Couldn't remove: ${e.message}`);
+          }
+        },
+      }));
+    });
+  } catch (e) {
+    grid.innerHTML = `Couldn't load your recipe book: ${e.message}`;
+  }
+}
 
 // ---------- Pantry ----------
 document.getElementById('pantryForm').addEventListener('submit', async (e) => {

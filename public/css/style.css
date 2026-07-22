@@ -213,6 +213,62 @@ main#app {
 }
 .recipe-card .card-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
+.img-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.2rem;
+  background: linear-gradient(135deg, #dff0e3 0%, #f3ede0 100%);
+}
+.hero-img-wrap .img-placeholder {
+  font-size: 5.5rem;
+  background: linear-gradient(160deg, #bfe3cd 0%, #f3ede0 100%);
+}
+
+.remove-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.92);
+  color: var(--danger);
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  line-height: 1;
+  box-shadow: var(--shadow-float);
+}
+
+/* ---------- Segmented control (Cookbook: Recipes / Pantry) ---------- */
+.segmented {
+  display: inline-flex;
+  background: var(--pill-bg);
+  border-radius: 999px;
+  padding: 4px;
+  gap: 2px;
+  margin-bottom: 16px;
+}
+.segmented-btn {
+  border: none;
+  background: transparent;
+  padding: 8px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--green-deep);
+  font-family: inherit;
+}
+.segmented-btn.active { background: white; box-shadow: var(--shadow-card); }
+
+.cookbook-view { display: none; }
+.cookbook-view.active { display: block; }
+
 .recipe-card .card-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 6px; }
 
 .recipe-name { font-weight: 800; font-size: 1.05rem; letter-spacing: -0.01em; line-height: 1.25; }
@@ -338,10 +394,10 @@ main#app {
   right: 16px;
   bottom: 14px;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: wrap-reverse;
   gap: 6px;
   justify-content: flex-end;
-  max-width: 60%;
+  max-width: 62%;
 }
 .hero-card .hero-badges .badge {
   background: rgba(255,255,255,0.92);
@@ -374,7 +430,7 @@ main#app {
   align-items: center;
   justify-content: center;
 }
-.round-btn svg { width: 24px; height: 24px; }
+.round-btn svg { width: 24px; height: 24px; stroke: currentColor; }
 .round-btn.no { color: var(--danger); }
 .round-btn.yes { color: var(--green); width: 66px; height: 66px; }
 .round-btn.plus { color: var(--green-dark); }
