@@ -1,23 +1,14 @@
 // Main app logic: tab switching, search, swipe deck, calendar, snacks, pantry.
 
-// ---------- Tab / subtab switching ----------
-document.querySelectorAll('.tab-btn').forEach((btn) => {
+// ---------- Tab switching (bottom nav) ----------
+document.querySelectorAll('.nav-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach((b) => b.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach((p) => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
     if (btn.dataset.tab === 'calendar') loadCalendar();
     if (btn.dataset.tab === 'pantry') loadPantry();
-  });
-});
-
-document.querySelectorAll('.subtab-btn').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.subtab-btn').forEach((b) => b.classList.remove('active'));
-    document.querySelectorAll('.subtab-panel').forEach((p) => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(`subtab-${btn.dataset.subtab}`).classList.add('active');
   });
 });
 
@@ -176,8 +167,7 @@ function renderSwipeDeck() {
   }
   swipeControls.style.display = 'flex';
   const card = swipeDeck[0];
-  const cardEl = buildRecipeCard(card, {});
-  cardEl.classList.add('swipe-card');
+  const cardEl = buildRecipeCard(card, { variant: 'hero' });
   swipeStage.appendChild(cardEl);
 }
 
