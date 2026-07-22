@@ -75,4 +75,18 @@ router.post('/tag', async (req, res) => {
   }
 });
 
+// GET /api/discover/ninja-combi?request=... -> real (not AI-invented)
+// Ninja Combi / Ninja Foodi recipes found via Google Search grounding.
+// Slower than the other endpoints (a couple of extra AI calls), so this
+// is meant to be triggered explicitly rather than on every page load.
+router.get('/ninja-combi', async (req, res) => {
+  try {
+    const request = req.query.request || '';
+    const cards = await discover.findRealNinjaComboRecipes({ request });
+    res.json({ cards });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 module.exports = router;

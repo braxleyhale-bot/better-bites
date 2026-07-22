@@ -73,6 +73,16 @@ main#app {
   margin: 6px 0 14px;
 }
 
+.page-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 6px 0 14px;
+}
+.page-title-row .page-title { margin: 0; }
+
 /* ---------- Bottom nav ---------- */
 .bottom-nav {
   position: fixed;
@@ -405,11 +415,14 @@ main#app {
 
 .hero-card .hero-details {
   max-height: 40%;
+  min-height: 64px;
   overflow-y: auto;
   padding: 14px 18px 16px;
   background: var(--card);
   flex-shrink: 0;
 }
+.hero-card .hero-details .recipe-summary { font-size: 0.9rem; }
+.hero-card .hero-details .instructions-toggle { margin-top: 4px; }
 
 .swipe-controls {
   display: flex;

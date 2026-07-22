@@ -1,6 +1,7 @@
 const express = require('express');
 const gemini = require('../services/gemini');
 const prefs = require('../services/preferences');
+const { toCard, attachPhotos } = require('../services/discover');
 
 const router = express.Router();
 
@@ -14,6 +15,11 @@ router.get('/today', async (req, res) => {
       prefs.getLikedDislikedTags(),
     ]);
     const suggestion = await gemini.suggestDailyMeal({ recentMeals, pantryItems, likedTags, dislikedTags });
+    if (suggestion.recipe) {
+      const card = toCard(suggestion.recipe);
+      await attachPhotos([card]);
+      suggestion.recipe = card;
+    }
     res.json(suggestion);
   } catch (e) {
     res.status(500).json({ error: e.message });

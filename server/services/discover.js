@@ -12,6 +12,7 @@
 
 const mealdb = require('./mealdb');
 const gemini = require('./gemini');
+const photos = require('./photos');
 
 function toCard(recipe) {
   // Normalizes either a MealDB-shaped or Gemini-shaped recipe into the
@@ -37,6 +38,26 @@ function toCard(recipe) {
   };
 }
 
+// Fills in a photo (via Pexels) for any card that doesn't already have one
+// -- mainly AI-invented recipes, which never come with a photo of their
+// own. If PEXELS_API_KEY isn't configured, or a lookup comes back empty,
+// the card is left as-is and the frontend shows a food-emoji tile
+// instead. Runs all lookups in parallel so it doesn't add up latency.
+async function attachPhotos(cards) {
+  await Promise.all(
+    cards.map(async (c) => {
+      if (c.image) return;
+      try {
+        const url = await photos.getPhotoUrl(c.name);
+        if (url) c.image = url;
+      } catch (e) {
+        // ignore -- frontend falls back to an emoji tile
+      }
+    })
+  );
+  return cards;
+}
+
 async function buildSwipeFeed({ likedTags = [], dislikedTags = [], pantryItems = [], count = 8 }) {
   const half = Math.ceil(count / 2);
 
@@ -54,6 +75,7 @@ async function buildSwipeFeed({ likedTags = [], dislikedTags = [], pantryItems =
     const j = Math.floor(Math.random() * (i + 1));
     [cards[i], cards[j]] = [cards[j], cards[i]];
   }
+  await attachPhotos(cards);
   return cards;
 }
 
@@ -71,7 +93,21 @@ async function searchRecipes({ query, pantryItems = [], likedTags = [], disliked
     seen.add(m.externalId);
     return true;
   });
-  return [...aiRecipes.map(toCard), ...externalMeals.slice(0, 8).map(toCard)];
+  const cards = [...aiRecipes.map(toCard), ...externalMeals.slice(0, 8).map(toCard)];
+  await attachPhotos(cards);
+  return cards;
+}
+
+// Real (not AI-invented) Ninja Combi / Ninja Foodi recipes, found via
+// Google Search grounding and then structured into cards. This is
+// slower and costs an extra couple of AI calls, so it's kept as an
+// explicit, on-demand action (see GET /api/discover/ninja-combi) rather
+// than being folded into every feed/search load.
+async function findRealNinjaComboRecipes({ request = '' } = {}) {
+  const recipes = await gemini.findRealNinjaComboRecipes({ request });
+  const cards = recipes.map(toCard);
+  await attachPhotos(cards);
+  return cards;
 }
 
 // On-demand nutrition estimate for a single recipe (used when the
@@ -81,4 +117,4 @@ async function tagRecipe({ name, ingredients, instructions }) {
   return tags;
 }
 
-module.exports = { buildSwipeFeed, searchRecipes, toCard, tagRecipe };
+module.exports = { buildSwipeFeed, searchRecipes, toCard, tagRecipe, attachPhotos, findRealNinjaComboRecipes };

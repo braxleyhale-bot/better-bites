@@ -103,6 +103,7 @@ Render will host the app so it's reachable from any browser.
    - `GOOGLE_SHEET_ID` → the Sheet ID from Step 2
    - `GOOGLE_SERVICE_ACCOUNT_JSON` → paste the *entire* contents of the
      JSON key file from Step 3, as one line
+   - `PEXELS_API_KEY` → optional, see "Real photos for AI recipes" below
 6. Click **Create Web Service**. First deploy takes a couple of minutes.
 7. Once it's live, open the URL Render gives you (something like
    `https://better-bites.onrender.com`) — that's your app.
@@ -129,6 +130,44 @@ If you want to test on your own computer before deploying:
    npm start
    ```
 4. Open http://localhost:3000 in your browser.
+
+---
+
+## Real photos for AI recipes (optional)
+
+Recipes Gemini invents don't come with a photo of their own — without any
+setup, those cards just show a food emoji instead of a picture, which is
+fine but less nice to look at. If you want real photos on those cards too:
+
+1. Go to https://www.pexels.com/api/ and sign up (free).
+2. Copy your API key from your Pexels account page.
+3. Set it as `PEXELS_API_KEY` in your `.env` file (local) or Render's
+   environment variables (deployed).
+
+This is entirely optional and free (200 requests/hour, 20,000/month) —
+recipes from TheMealDB already have real photos either way, this only
+affects the AI-invented ones.
+
+---
+
+## Real Ninja Combi recipes (Discover tab)
+
+There's a "🔍 Real Ninja Combi recipes" button on the Discover tab. Unlike
+the rest of the app, this doesn't ask Gemini to invent recipes — it uses
+Gemini's Google Search grounding to actually search the web for real,
+published Ninja Combi / Ninja Foodi recipes and pulls those in, with a
+link back to where each one came from.
+
+Two things worth knowing:
+- It's noticeably slower than a normal feed refresh (it's doing a real web
+  search plus two AI calls), which is why it's a separate button instead
+  of running automatically every time you open Discover.
+- Google's Search grounding tool is billed per search query on top of the
+  normal free Gemini tier, so this specific button may use a small amount
+  of paid quota once you exceed AI Studio's free allowance — normal
+  recipe generation elsewhere in the app is unaffected. Use it as often as
+  you like; the cost per search is small, but it's worth knowing it's not
+  covered by the same "free tier" umbrella as everything else.
 
 ---
 

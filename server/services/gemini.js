@@ -9,6 +9,7 @@
 //   the Ninja blender + blender bottles instead of a Creami
 
 const { GoogleGenerativeAI, SchemaType } = require('@google/generative-ai');
+const fetch = require('node-fetch');
 
 let genAI = null;
 function client() {
@@ -19,6 +20,28 @@ function client() {
     genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   }
   return genAI;
+}
+
+// Raw REST call to the classic generateContent endpoint. Used only for the
+// Google Search grounding flow below -- combining the `google_search` tool
+// with the SDK's structured-output mode isn't reliably supported, so that
+// flow calls the API directly instead of going through the SDK wrapper
+// `generateJSON` uses everywhere else.
+const GEMINI_REST_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
+async function restGenerateContent({ model, contents, tools }) {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY is not set. See SETUP.md.');
+  }
+  const res = await fetch(`${GEMINI_REST_BASE}/${model}:generateContent`, {
+    method: 'POST',
+    headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents, ...(tools ? { tools } : {}) }),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Gemini API error (${res.status}): ${body.slice(0, 300)}`);
+  }
+  return res.json();
 }
 
 const HOUSEHOLD_CONTEXT = `
@@ -79,12 +102,18 @@ const recipeSchema = {
     estCarbsG: { type: SchemaType.NUMBER },
     tags: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
     healthNote: { type: SchemaType.STRING },
+    source: { type: SchemaType.STRING },
+    sourceUrl: { type: SchemaType.STRING },
   },
   required: [
     'name', 'summary', 'ingredients', 'instructions', 'usesNinjaCombi',
     'usesBlender', 'usesProteinPowder', 'estCostUsd', 'estCaloriesPerServing',
     'estProteinG', 'estSodiumMg', 'estCarbsG', 'tags', 'healthNote',
   ],
+  // source/sourceUrl are intentionally NOT required -- most recipes here
+  // are Gemini's own invention and have neither; they're only populated
+  // for recipes pulled from a real, cited web source (see
+  // findRealNinjaComboRecipes below).
 };
 
 const recipeListSchema = {
@@ -213,9 +242,76 @@ into this dish undetectably, or say "not a good fit" if there isn't one.
   return generateJSON({ prompt, schema: nutritionTagSchema });
 }
 
+// Step 1 of the "real Ninja Combi recipes" flow: use Google Search
+// grounding to find actual, currently-published Ninja Combi / Ninja Foodi
+// (air-fry + pressure-cook combo appliance) recipes on the web, rather
+// than letting the model invent them. Returns the model's grounded
+// write-up plus the real source URLs it cited.
+async function searchRealNinjaComboRecipes({ request = '' } = {}) {
+  const prompt = `
+Search the web for real, currently published Ninja Combi / Ninja Foodi
+multi-cooker (air fry + pressure cook combo appliance) dinner recipes for
+two people. ${request ? `Focus on: ${request}.` : ''}
+Find 3-4 real recipes from real recipe sites or blogs. Only report recipes
+you actually found via search -- do not invent or modify them. For each
+one, report: the recipe name, the source site's name, a short description,
+the full ingredient list, and the cooking steps as published.
+`.trim();
+  const data = await restGenerateContent({
+    model: 'gemini-3.5-flash',
+    contents: [{ parts: [{ text: prompt }] }],
+    tools: [{ google_search: {} }],
+  });
+  const candidate = data.candidates && data.candidates[0];
+  const text = (candidate?.content?.parts || []).map((p) => p.text || '').join('\n');
+  const chunks = candidate?.groundingMetadata?.groundingChunks || [];
+  const sources = chunks.map((c) => c.web).filter(Boolean);
+  return { text, sources };
+}
+
+// Step 2: turn that grounded, real-world write-up into this app's normal
+// structured recipe shape (no search tool here -- just extraction, which
+// is what the classic API supports combining with responseSchema).
+async function structureNinjaComboRecipes({ text, sources }) {
+  if (!text.trim()) return [];
+  const sourceList = sources.map((s) => `- ${s.title || s.uri}: ${s.uri}`).join('\n') || '(none captured)';
+  const prompt = `
+Below is real information gathered from the web about actual published
+Ninja Combi / Ninja Foodi recipes. Convert it into structured recipes --
+use the real ingredients/instructions given below, do not invent a
+different recipe or change what it is. For each recipe's "source" field
+use the site name, and for "sourceUrl" pick the best-matching URL from the
+list below. Set usesNinjaCombi to true for all of these (they were
+searched specifically because they're written for that appliance).
+
+SOURCES FOUND:
+${sourceList}
+
+RESEARCH NOTES:
+${text}
+`.trim();
+  const data = await generateJSON({ prompt, schema: recipeListSchema });
+  return data.recipes;
+}
+
+// Full flow: search the web, then structure what was found. Falls back to
+// an empty array (never throws past this point) so a failed search never
+// breaks the page that called it.
+async function findRealNinjaComboRecipes({ request = '' } = {}) {
+  const { text, sources } = await searchRealNinjaComboRecipes({ request });
+  const recipes = await structureNinjaComboRecipes({ text, sources });
+  return recipes.map((r) => ({
+    ...r,
+    usesNinjaCombi: true,
+    source: r.source || (sources[0] && sources[0].title) || 'Web search',
+    sourceUrl: r.sourceUrl || (sources[0] && sources[0].uri) || null,
+  }));
+}
+
 module.exports = {
   suggestDailyMeal,
   generateRecipes,
   generateSnackIdeas,
   tagExternalRecipe,
+  findRealNinjaComboRecipes,
 };

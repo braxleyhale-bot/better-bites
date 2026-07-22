@@ -211,7 +211,11 @@ function buildHeroCard(card, { onPlus } = {}) {
   const { macroRow, hasMacros } = buildMacroRow(card);
   if (hasMacros) details.appendChild(macroRow);
   const loadNutrition = attachLazyNutrition(card, details);
-  details.appendChild(buildIngredientsToggle(card, { onOpen: loadNutrition }));
+  const ingToggle = buildIngredientsToggle(card, { onOpen: loadNutrition });
+  details.appendChild(ingToggle);
+  if (!card.summary && !hasMacros && (!card.ingredients || !card.ingredients.length)) {
+    details.appendChild(el('div', { class: 'recipe-summary', html: 'No extra details for this one — swipe to see the next.' }));
+  }
   wrap.appendChild(details);
 
   return wrap;

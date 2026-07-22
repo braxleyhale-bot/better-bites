@@ -31,22 +31,47 @@ function normalize(meal) {
   };
 }
 
-async function getRandomMeals(count = 5) {
-  // random.php only ever returns one meal per call, so fire off several
-  // requests in parallel and de-dupe by id.
-  const calls = Array.from({ length: count + 3 }, () => fetch(`${BASE}/random.php`).then((r) => r.json()));
-  const results = await Promise.all(calls);
-  const seen = new Set();
-  const meals = [];
-  for (const r of results) {
-    const meal = r && r.meals && r.meals[0];
-    if (meal && !seen.has(meal.idMeal)) {
-      seen.add(meal.idMeal);
-      meals.push(normalize(meal));
-    }
-    if (meals.length >= count) break;
+// TheMealDB's random.php pulls from every category with no way to filter,
+// which is how "Discover" ended up serving desserts and breakfast pastries
+// for dinner. This app is about dinner (and leftovers), so random picks
+// are restricted to categories that are actually dinner-appropriate.
+const DINNER_CATEGORIES = ['Chicken', 'Beef', 'Seafood', 'Pasta', 'Pork', 'Vegetarian', 'Vegan', 'Lamb', 'Miscellaneous', 'Goat'];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  return meals;
+  return a;
+}
+
+async function getRandomMeals(count = 5) {
+  // Sample a handful of dinner-appropriate categories, pull their meal
+  // lists (id/name/thumb only), then randomly select `count` of them and
+  // fetch full details for just those.
+  const categoriesToTry = shuffle(DINNER_CATEGORIES).slice(0, 4);
+  const lists = await Promise.all(
+    categoriesToTry.map((c) =>
+      fetch(`${BASE}/filter.php?c=${encodeURIComponent(c)}`)
+        .then((r) => r.json())
+        .then((d) => d.meals || [])
+        .catch(() => [])
+    )
+  );
+  const candidates = shuffle(lists.flat());
+  const seen = new Set();
+  const picked = [];
+  for (const m of candidates) {
+    if (seen.has(m.idMeal)) continue;
+    seen.add(m.idMeal);
+    picked.push(m);
+    if (picked.length >= count) break;
+  }
+  const full = await Promise.all(
+    picked.map((m) => fetch(`${BASE}/lookup.php?i=${m.idMeal}`).then((res) => res.json()))
+  );
+  return full.map((f) => f.meals && f.meals[0]).filter(Boolean).map(normalize);
 }
 
 async function searchByName(query) {

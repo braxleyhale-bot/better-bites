@@ -1,7 +1,7 @@
 const express = require('express');
 const gemini = require('../services/gemini');
 const prefs = require('../services/preferences');
-const { toCard } = require('../services/discover');
+const { toCard, attachPhotos } = require('../services/discover');
 
 const router = express.Router();
 
@@ -16,7 +16,9 @@ router.get('/', async (req, res) => {
       likedTags,
       dislikedTags,
     });
-    res.json({ cards: recipes.map(toCard) });
+    const cards = recipes.map(toCard);
+    await attachPhotos(cards);
+    res.json({ cards });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

@@ -163,6 +163,33 @@ async function loadFeed() {
   }
 }
 
+// "Real Ninja Combi recipes" — an explicit, on-demand search (not part of
+// the regular feed/refresh, since it's slower and costs a couple of extra
+// AI calls) that finds actual published recipes via Google Search
+// grounding instead of letting Gemini invent them, and drops them at the
+// front of the swipe deck.
+document.getElementById('loadNinjaCombi').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Searching the web…';
+  try {
+    const data = await api.get('/api/discover/ninja-combi');
+    if (!data.cards.length) {
+      showToast("Couldn't find any real Ninja Combi recipes right now — try again in a bit.");
+    } else {
+      swipeDeck = [...data.cards, ...swipeDeck];
+      renderSwipeDeck();
+      showToast(`Found ${data.cards.length} real Ninja Combi recipe${data.cards.length === 1 ? '' : 's'}`);
+    }
+  } catch (err) {
+    showToast(`Search failed: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+});
+
 function renderSwipeDeck() {
   swipeStage.innerHTML = '';
   if (!swipeDeck.length) {
